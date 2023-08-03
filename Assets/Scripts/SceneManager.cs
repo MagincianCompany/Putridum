@@ -23,6 +23,7 @@ public class SceneManager : MonoBehaviour
     public GameObject SelectingAmountMinus;
     public GameObject SelectingAmountPlus;
     public Button SelectingAmountButton;
+    public Button SelectingAmountBackButton;
     public TextMeshProUGUI SelectingAmountButtonText;
 
     [Header("Selecting Player")]
@@ -156,16 +157,18 @@ public class SceneManager : MonoBehaviour
 
         MainCanvas.SetActive(false);
         MoreInfoCanvas.SetActive(false);
-        SelectingAmountCanvas.SetActive(true);
-        SelectingAmountMinus.SetActive(false);
-        SelectingAmountPlus.SetActive(false);
+        SelectingAmountCanvas.SetActive(false);
         SelectingPlayerCanvas.SetActive(true);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
 
         PlayerIndex = 0;
-        gameManager.PlayerList.Add(new(""));
-        DesactivateButtonPlayerSelect();
+
+        SelectingPlayerNameField.text = "";
+
+        if(gameManager.PlayerList.Count<=0) gameManager.PlayerList.Add(new(""));
+
+        setPlayerName();
 
         selectingPlayerChange();
     }
@@ -294,7 +297,9 @@ public class SceneManager : MonoBehaviour
             SelectingAmountButtonText.color.g,
             SelectingAmountButtonText.color.b,
             0.1568f);
-        gameManager.PlayerList[PlayerIndex] = new("");
+
+        //esta línea va a haber que mejorarla por que si se quita, tenemos un problema, si se pone tenemos otro
+        //gameManager.PlayerList[PlayerIndex] = new("");
     }
 
 

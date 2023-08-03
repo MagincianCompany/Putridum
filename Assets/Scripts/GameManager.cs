@@ -32,6 +32,11 @@ public class GameManager : MonoBehaviour
         sceneManager.selectingPlayerCanvas();
     }
 
+    public void BackToMainMenu()
+    { 
+        PlayerList=new List<Player>();
+        sceneManager.mainMenuCanvas();
+    }
     public void SetRounds()
     {
         sceneManager.SelectingMin= 1;
@@ -46,9 +51,15 @@ public class GameManager : MonoBehaviour
             }
             
             );
+
+        sceneManager.SelectingAmountBackButton.onClick.RemoveAllListeners();
+        sceneManager.SelectingAmountBackButton.onClick.AddListener(BackToPlayerSelection);
         sceneManager.selectingAmountCanvas();
     }
-
+    public void BackToPlayerSelection()
+    {
+        sceneManager.selectingPlayerCanvas();
+    }
     public void ChangeDirection()
     {
         HandCards -= multyplier;
@@ -113,6 +124,8 @@ public class GameManager : MonoBehaviour
             }
             sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
             sceneManager.SelectingAmountButton.onClick.AddListener(()=>selectingButtonIsClicked=true);
+
+            sceneManager.SelectingAmountBackButton.onClick.RemoveAllListeners();
 
             sceneManager.selectingAmountCanvas();
             yield return new WaitUntil(()=> selectingButtonIsClicked);
