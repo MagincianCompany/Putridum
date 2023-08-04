@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
         sceneManager.SelectingMax = Mathf.FloorToInt((int)cardType / PlayerList.Count) ;
         sceneManager.SelectingAmount = sceneManager.SelectingMax;
         sceneManager.SelectingTitle = "Rounds";
+        sceneManager.SelectingAmountInformation.text = $"";
         sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
         sceneManager.SelectingAmountButton.onClick.AddListener(
             () =>{
@@ -109,7 +110,9 @@ public class GameManager : MonoBehaviour
 
             if (player == PlayerList[PlayerList.Count - 1])
             {
+
                 sceneManager.SelectingForbiddenList = new List<int> { HandCards - w };
+                sceneManager.SelectingAmountInformation.text = $"Forbidden: {HandCards - w}";
 
                 while(sceneManager.SelectingForbiddenList.Contains(sceneManager.SelectingMin))
                 {
@@ -121,7 +124,11 @@ public class GameManager : MonoBehaviour
                 {
                     sceneManager.SelectingMax--;
                 }
+
+
             }
+            else sceneManager.SelectingAmountInformation.text = $"";
+
             sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
             sceneManager.SelectingAmountButton.onClick.AddListener(()=>selectingButtonIsClicked=true);
 
@@ -150,6 +157,7 @@ public class GameManager : MonoBehaviour
             sceneManager.SelectingMax = HandCards;
             sceneManager.SelectingTitle = $"Wins {player.Name}" ;
             sceneManager.SelectingForbiddenList=new List<int>();
+            sceneManager.SelectingAmountInformation.text = $"";
             sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
             sceneManager.SelectingAmountButton.onClick.AddListener(() => selectingButtonIsClicked = true);
 
@@ -299,3 +307,7 @@ public enum CardType
     ES52=52 ,
     ES48=48
 }
+
+
+
+//POPU PUTO
