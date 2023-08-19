@@ -107,26 +107,45 @@ public class SceneManager : MonoBehaviour
             float p = 0f;
             foreach (var player in gameManager.PlayerList)
             {
-                int r = 0;
+
                 print(p);
                 var c = Color.HSVToRGB(p/gameManager.PlayerList.Count,1,1);
                 
                 print("fpfp");
                 float sc = 0;
-                foreach (var score in player.Scores)
+                for (int i = 0; i < player.Scores.Count;i++)
                 {
+                    var score = player.Scores[i];
                     sc += score;
                     print("scsc");
-                    print($"{r}*{x}/{w}={r * x / w}");
+                    print($"{i}*{x}/{w}={i * x / w}");
 
                     var pt = (GameObject)Instantiate(point, Vector3.zero,
                         Quaternion.identity, conteinerGraph.transform);
 
-                    pt.transform.localPosition = new Vector3(r * x / (w-1),
+                    pt.transform.localPosition = new Vector3(i * x / (w-1),
                         (sc - mh) * y / (xh - mh), 0);
+
                     pt.GetComponent<Image>().color = c;
 
-                    r++;
+                    if (i + 1 < player.Scores.Count)
+                    {
+
+                        var ln = (GameObject)Instantiate(line, Vector3.zero,
+                            Quaternion.identity, conteinerGraph.transform);
+
+                        ln.transform.localPosition = new Vector3(i * x / (w - 1),
+                            (sc - mh) * y / (xh - mh), 0);
+                        var yscore = player.Scores[i + 1] * y / (xh - mh);
+                        var xscore = x / (w - 1);
+                        var a = Mathf.Atan2(yscore, xscore)
+                            * 180 / Mathf.PI;
+                        ln.GetComponent<RectTransform>().sizeDelta=new Vector2 ( Mathf.Sqrt(
+                            yscore* yscore+xscore*xscore),10);
+                        ln.transform.rotation = Quaternion.Euler(0,0,a);
+                        ln.GetComponent<Image>().color = c;
+                    }
+
                 }
                 p++;
             }

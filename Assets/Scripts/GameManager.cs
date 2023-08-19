@@ -327,7 +327,7 @@ public class GameManager : MonoBehaviour
         }
         handsIsShowing = false;
 
-        yield return new WaitForSecondsRealtime(1.5f);
+        yield return new WaitForSecondsRealtime(1f);
         sceneManager.ShowPlayerListCommon.gameObject.SetActive(RoundIndex>0);
         sceneManager.StartRoundCanvas.SetActive(false);
     }
