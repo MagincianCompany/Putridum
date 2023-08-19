@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class SceneManager : MonoBehaviour
 {
@@ -50,11 +51,25 @@ public class SceneManager : MonoBehaviour
     public TextMeshProUGUI ChargingTitle;
     public TextMeshProUGUI ChargingTitleShadow;
     public Button ChargingButton;
+    public Button ChargingBackButton;
 
     [Header("PlayerList")]
     public GameObject PlayerListCanvas;
     public GameObject Content;
+    public Button Continue;
+    public Button Reload;
     public Object playerLabel;
+
+    [Header("FinalGraph")]
+    public GameObject GraphCanvas;
+    public GameObject conteinerGraph;
+    public Object line;
+    public Object point;
+
+    [Header("Common")]
+    public Button ShowPlayerListCommon;
+    public Button HidePlayerListCommon;
+
 
     [Header("Other")]
     public TextMeshProUGUI version;
@@ -65,14 +80,58 @@ public class SceneManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        DontDestroyOnLoad(gameObject);
         mainMenuCanvas();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if(conteinerGraph.activeSelf && GraphCanvas.activeSelf && conteinerGraph.transform.childCount<1)
+        setGrid();
+    }
+
+    public void setGrid()
+    {
+        // Al modificar el tamaño de las lineas se debe modificar siempre el eje X, aunque luego tenga que rotarse
+        // esto es para mantener el eje centrado
+
+        int xh = gameManager.PlayerList.Max(x => x.TotalScores().Max());
+        int mh = gameManager.PlayerList.Min(x => x.TotalScores().Min());
+        mh = mh>=0 ? 0 : mh;
+        print(mh);
+        var x = conteinerGraph.GetComponent<RectTransform>().sizeDelta.x;
+        var y = conteinerGraph.GetComponent<RectTransform>().sizeDelta.y;
+        int w = gameManager.RoundIndex;
+        if (gameManager.RoundIndex>0)
+        {
+            float p = 0f;
+            foreach (var player in gameManager.PlayerList)
+            {
+                int r = 0;
+                print(p);
+                var c = Color.HSVToRGB(p/gameManager.PlayerList.Count,1,1);
+                
+                print("fpfp");
+                float sc = 0;
+                foreach (var score in player.Scores)
+                {
+                    sc += score;
+                    print("scsc");
+                    print($"{r}*{x}/{w}={r * x / w}");
+
+                    var pt = (GameObject)Instantiate(point, Vector3.zero,
+                        Quaternion.identity, conteinerGraph.transform);
+
+                    pt.transform.localPosition = new Vector3(r * x / (w-1),
+                        (sc - mh) * y / (xh - mh), 0);
+                    pt.GetComponent<Image>().color = c;
+
+                    r++;
+                }
+                p++;
+            }
+        }
+
     }
 
     public void setPlayersLabels()
@@ -111,6 +170,7 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        ShowPlayerListCommon.gameObject.SetActive(false);
 
     }
     public void mainMenuCanvas()
@@ -123,6 +183,7 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        ShowPlayerListCommon.gameObject.SetActive(false);
     }
     public void chargingCanvas()
     {
@@ -134,7 +195,7 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(true); 
         PlayerListCanvas.SetActive(false);
-
+        ShowPlayerListCommon.gameObject.SetActive(gameManager.RoundIndex > 0);
         ChargingTitleShadow.text = ChargingTitle.text;
     }
     public void selectingAmountCanvas()
@@ -146,9 +207,12 @@ public class SceneManager : MonoBehaviour
         SelectingAmountCanvas.SetActive(true);
         SelectingPlayerCanvas.SetActive(false);
         SelectingAmountTitle.text = SelectingTitle;
+        
         SelectingAmountTextShadow.text = SelectingTitle;
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        print($"sh: {gameManager.RoundIndex > 0}");
+        ShowPlayerListCommon.gameObject.SetActive(gameManager.RoundIndex > 0);
         selectingAmountChange();
     }
     public void selectingPlayerCanvas()
@@ -160,7 +224,8 @@ public class SceneManager : MonoBehaviour
         SelectingAmountCanvas.SetActive(false);
         SelectingPlayerCanvas.SetActive(true);
         ChargingCanvas.SetActive(false);
-        PlayerListCanvas.SetActive(false);
+        PlayerListCanvas.SetActive(false); 
+        ShowPlayerListCommon.gameObject.SetActive(false);
 
         PlayerIndex = 0;
 
@@ -184,7 +249,24 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(true);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(true);
+        ShowPlayerListCommon.gameObject.SetActive(false);
+    }
+    public void ShowPlayerListSuper()
+    {
+        PlayerListCanvas.SetActive(true);
+        ShowPlayerListCommon.gameObject.SetActive(false);
+        HidePlayerListCommon.gameObject.SetActive(true);
+        Continue.gameObject.SetActive(false);
+        Reload.gameObject.SetActive(false);
 
+    }
+    public void HidePlayerListSuper()
+    {
+        PlayerListCanvas.SetActive(false);
+        ShowPlayerListCommon.gameObject.SetActive(true);
+        HidePlayerListCommon.gameObject.SetActive(false);
+        Continue.gameObject.SetActive(true);
+        Reload.gameObject.SetActive(true);
     }
 
     public void selectingPlayerAdd()

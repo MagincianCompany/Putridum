@@ -45,13 +45,9 @@ public class GameManager : MonoBehaviour
         sceneManager.SelectingTitle = "Rounds";
         sceneManager.SelectingAmountInformation.text = $"";
         sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
-        sceneManager.SelectingAmountButton.onClick.AddListener(
-            () =>{
+        sceneManager.SelectingAmountButton.onClick.AddListener(() =>{
                 maxRounds = sceneManager.SelectingAmount;
-                Round();
-            }
-            
-            );
+                Round();});
 
         sceneManager.SelectingAmountBackButton.onClick.RemoveAllListeners();
         sceneManager.SelectingAmountBackButton.onClick.AddListener(BackToPlayerSelection);
@@ -98,17 +94,42 @@ public class GameManager : MonoBehaviour
         PlayerList.Add(temp);
 
     }
-    IEnumerator RoundCoroutine()
+    public void antiRotateList()
     {
+        var temp = PlayerList[PlayerList.Count-1];
+        PlayerList.RemoveAt(PlayerList.Count - 1);
+        var tempList = new List<Player>() { temp };
+        tempList.AddRange(PlayerList);
+        PlayerList= tempList;
+    }
+    //Hace la predicción de cada jugador
+    IEnumerator RoundCoroutine(int init = 0)
+    {
+        bool cancel = false;
+
         int w = 0;
-        foreach (var player in PlayerList) 
+
+        for (int i = 0; i < init; i++)
         {
+            w += PlayerList[i].Predictions[RoundIndex];
+        }
+        
+        for (int i=init;i<PlayerList.Count;i++) 
+        {
+            if (i < 0)
+            {
+                cancel = true;
+                break;
+            }
+
+            var player = PlayerList[i];
+
             sceneManager.SelectingMin = 0;
-            sceneManager.SelectingAmount = 0;
+            sceneManager.SelectingAmount = PlayerList[i].Predictions.Count > RoundIndex ? PlayerList[i].Predictions[RoundIndex] : 0;
             sceneManager.SelectingMax = HandCards;
             sceneManager.SelectingTitle = $"Prediction {player.Name}";
 
-            if (player == PlayerList[PlayerList.Count - 1])
+            if (player == PlayerList[PlayerList.Count - 1] && HandCards - w>=0)
             {
 
                 sceneManager.SelectingForbiddenList = new List<int> { HandCards - w };
@@ -133,27 +154,61 @@ public class GameManager : MonoBehaviour
             sceneManager.SelectingAmountButton.onClick.AddListener(()=>selectingButtonIsClicked=true);
 
             sceneManager.SelectingAmountBackButton.onClick.RemoveAllListeners();
+            sceneManager.SelectingAmountBackButton.onClick.AddListener(() =>{
+                print(i);
+                selectingButtonIsClicked = true;
+                i -=2;
+            });
 
-            sceneManager.selectingAmountCanvas();
+
+                sceneManager.selectingAmountCanvas();
             yield return new WaitUntil(()=> selectingButtonIsClicked);
 
             selectingButtonIsClicked = false;
             var x = int.Parse(sceneManager.SelectingAmountText.text);
             w += x;
-            player.AddPrediction(x);
+            if (player.Predictions.Count > RoundIndex)
+                player.Predictions[RoundIndex] = x;
+            else player.AddPrediction(x);
+
 
             Debug.Log("Predicción agregada");
         }
-        sceneManager.chargingCanvas();
-        sceneManager.ChargingButton.onClick.RemoveAllListeners();
-        sceneManager.ChargingButton.onClick.AddListener(()=>StartCoroutine(EndRoundCoroutine()));
-    }
-    IEnumerator EndRoundCoroutine()
-    {
-        foreach (var player in PlayerList)
+
+        if (!cancel)
         {
+            sceneManager.chargingCanvas();
+            sceneManager.ChargingButton.onClick.RemoveAllListeners();
+            sceneManager.ChargingButton.onClick.AddListener(() => StartCoroutine(EndRoundCoroutine()));
+            sceneManager.ChargingBackButton.onClick.RemoveAllListeners();
+            sceneManager.ChargingBackButton.onClick.AddListener(() =>{
+                StartCoroutine(RoundCoroutine(PlayerList.Count-1));
+            });
+        }
+        else
+        {
+            HandCards -= multyplier;
+            RoundIndex--;
+            antiRotateList();
+
+            if (RoundIndex >= 0) StartCoroutine(EndRoundCoroutine(PlayerList.Count - 1)); 
+            else SetRounds();
+        }
+    }
+    IEnumerator EndRoundCoroutine(int init = 0)
+    {
+        bool cancel = false;
+        for (int i = init; i < PlayerList.Count; i++)
+        {
+            if (i < 0)
+            {
+                cancel = true;
+                break;
+            }
+
+            var player = PlayerList[i];
             sceneManager.SelectingMin = 0;
-            sceneManager.SelectingAmount = 0;
+            sceneManager.SelectingAmount = PlayerList[i].Wins.Count > RoundIndex ? PlayerList[i].Wins[RoundIndex] : 0;
             sceneManager.SelectingMax = HandCards;
             sceneManager.SelectingTitle = $"Wins {player.Name}" ;
             sceneManager.SelectingForbiddenList=new List<int>();
@@ -161,25 +216,46 @@ public class GameManager : MonoBehaviour
             sceneManager.SelectingAmountButton.onClick.RemoveAllListeners();
             sceneManager.SelectingAmountButton.onClick.AddListener(() => selectingButtonIsClicked = true);
 
+            sceneManager.SelectingAmountBackButton.onClick.RemoveAllListeners();
+            sceneManager.SelectingAmountBackButton.onClick.AddListener(() => {
+                print(i);
+                selectingButtonIsClicked = true;
+                i -= 2;
+            });
+
             sceneManager.selectingAmountCanvas();
             yield return new WaitUntil(() => selectingButtonIsClicked);
 
             selectingButtonIsClicked = false;
-            player.AddWins(int.Parse(sceneManager.SelectingAmountText.text));
-            Debug.Log("Predicción agregada");
+            var x = int.Parse(sceneManager.SelectingAmountText.text);
+
+            if (player.Predictions.Count > RoundIndex)
+                player.AddWins(x);
+            else player.AddPrediction(x);
+
+            
+            Debug.Log("Win agregada");
         }
 
-        //TODO cambiar para que salgan las puntuaciones
-        sceneManager.setPlayersLabels();
-        sceneManager.playerListCanvas();
-        RoundIndex++;
-        HandCards+= multyplier;
+        if (!cancel)
+        {   
+            sceneManager.setPlayersLabels();
+            sceneManager.playerListCanvas();
+            RoundIndex++;
+            HandCards += multyplier;
+        }
+        else 
+        {
+            StartCoroutine(RoundCoroutine(PlayerList.Count - 1));
+        }
+
 
     }
     
 
     IEnumerator StartRoundTitleAnimationCoroutine()
     {
+        sceneManager.ShowPlayerListCommon.gameObject.SetActive(false);
         sceneManager.StartRoundIndex.text = "" + (RoundIndex+1);
         sceneManager.StartRoundTitleShadow.text = sceneManager.StartRoundTitle.text;
         sceneManager.StartRoundIndexShadow.text = sceneManager.StartRoundIndex.text;
@@ -205,6 +281,8 @@ public class GameManager : MonoBehaviour
 
         while (sceneManager.StartRoundTitle.color.a <= 1)
         {
+            sceneManager.ShowPlayerListCommon.gameObject.SetActive(false);
+
             c = sceneManager.StartRoundTitle.color;
             sceneManager.StartRoundTitle.color = new(c.r,c.g,c.b,c.a+0.02f);
             sceneManager.StartRoundTitleShadow.color = new(sc.r,sc.g,sc.b,sc.a);
@@ -232,8 +310,8 @@ public class GameManager : MonoBehaviour
         }
         indexIsShowing = false;
 
+        
         yield return new WaitForSecondsRealtime(1f);
-        sceneManager.StartRoundCanvas.SetActive(false);
 
     }
     IEnumerator StartRoundMoreInfoAnimationCoroutine()
@@ -250,8 +328,8 @@ public class GameManager : MonoBehaviour
         handsIsShowing = false;
 
         yield return new WaitForSecondsRealtime(1.5f);
+        sceneManager.ShowPlayerListCommon.gameObject.SetActive(RoundIndex>0);
         sceneManager.StartRoundCanvas.SetActive(false);
-
     }
     // Update is called once per frame
     void Update()
@@ -267,6 +345,21 @@ public class Player
 {
     public string Name;
     public List<int> Scores;
+    public List<int> TotalScores()
+    { 
+        var res = new List<int>();
+
+        for(int i = 0; i<Scores.Count;i++)
+        {
+            var x = 0;
+            for (int j = 0; j <= i ; j++)
+            {
+                x += Scores[j];
+            }
+            res.Add(x);
+        }
+        return res;
+    }
     public List<int> Predictions;
     public List<int> Wins;
 
@@ -304,7 +397,7 @@ public class Player
 
 public enum CardType
 {
-    ES52=52 ,
+    ES52=50 ,
     ES48=48
 }
 
