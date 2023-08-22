@@ -60,11 +60,17 @@ public class SceneManager : MonoBehaviour
     public Button Reload;
     public Object playerLabel;
 
-    [Header("FinalGraph")]
+    [Header("Graph")]
     public GameObject GraphCanvas;
     public GameObject conteinerGraph;
+
+    public Button ShowGraphButton;
+    public Button HideGraphButton;
     public Object line;
     public Object point;
+    public Object conteiner;
+    public int subdivision=2;
+    public GraphType graphType;
 
     [Header("Common")]
     public Button ShowPlayerListCommon;
@@ -83,13 +89,7 @@ public class SceneManager : MonoBehaviour
         mainMenuCanvas();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if(conteinerGraph.activeSelf && GraphCanvas.activeSelf && conteinerGraph.transform.childCount<1)
-        setGrid();
-    }
-
+    
     public void setGrid()
     {
         // Al modificar el tamaño de las lineas se debe modificar siempre el eje X, aunque luego tenga que rotarse
@@ -104,50 +104,90 @@ public class SceneManager : MonoBehaviour
         int w = gameManager.RoundIndex;
         if (gameManager.RoundIndex>0)
         {
-            float p = 0f;
-            foreach (var player in gameManager.PlayerList)
+            List<GameObject> conteiners = new List<GameObject>();
+            foreach (var _ in gameManager.PlayerList)
             {
-
+                conteiners.Add((GameObject)Instantiate(conteiner,conteinerGraph.transform));
+            }
+            for (int p = 0; p< gameManager.PlayerList.Count;p++)
+            {
+                var player = gameManager.PlayerList[p];
                 print(p);
-                var c = Color.HSVToRGB(p/gameManager.PlayerList.Count,1,1);
+                var c = Color.HSVToRGB((float)p/ (float)gameManager.PlayerList.Count,1,1);
                 
-                print("fpfp");
                 float sc = 0;
                 for (int i = 0; i < player.Scores.Count;i++)
                 {
                     var score = player.Scores[i];
                     sc += score;
-                    print("scsc");
-                    print($"{i}*{x}/{w}={i * x / w}");
 
                     var pt = (GameObject)Instantiate(point, Vector3.zero,
                         Quaternion.identity, conteinerGraph.transform);
 
                     pt.transform.localPosition = new Vector3(i * x / (w-1),
                         (sc - mh) * y / (xh - mh), 0);
+                    
+                    if(graphType==GraphType.THERMOMETER)
+                    pt.GetComponent<RectTransform>().sizeDelta = 
+                        34f * (gameManager.PlayerList.Count - p) / gameManager.PlayerList.Count 
+                        * Vector2.one;
 
                     pt.GetComponent<Image>().color = c;
 
                     if (i + 1 < player.Scores.Count)
                     {
+                        if (graphType == GraphType.SLICEDBAR)
+                        {
+                            var yscore = player.Scores[i + 1] * y / (xh - mh);
+                            var xscore = x / (w - 1);
+                            var a = Mathf.Atan2(yscore, xscore)
+                                * 180 / Mathf.PI;
 
-                        var ln = (GameObject)Instantiate(line, Vector3.zero,
-                            Quaternion.identity, conteinerGraph.transform);
+                            var Rfull = Mathf.Sqrt(yscore * yscore + xscore * xscore);
+                            var origin = new Vector3(
+                                    i * x / (w - 1),
+                                    (sc - mh) * y / (xh - mh), 0);
+                            var N = Mathf.Pow(gameManager.PlayerList.Count, subdivision);
+                            for (int z = 0; z < N; z++)
+                            {
+                                var ln = (GameObject)Instantiate(line, Vector3.zero,
+                                Quaternion.identity, conteiners[(p + z) % gameManager.PlayerList.Count].transform);
 
-                        ln.transform.localPosition = new Vector3(i * x / (w - 1),
-                            (sc - mh) * y / (xh - mh), 0);
-                        var yscore = player.Scores[i + 1] * y / (xh - mh);
-                        var xscore = x / (w - 1);
-                        var a = Mathf.Atan2(yscore, xscore)
-                            * 180 / Mathf.PI;
-                        ln.GetComponent<RectTransform>().sizeDelta=new Vector2 ( Mathf.Sqrt(
-                            yscore* yscore+xscore*xscore),10);
-                        ln.transform.rotation = Quaternion.Euler(0,0,a);
-                        ln.GetComponent<Image>().color = c;
+                                ln.transform.localPosition = origin + new Vector3(
+                                    xscore, yscore) * z / N;
+                                ln.GetComponent<RectTransform>().sizeDelta = new Vector2(
+                                Rfull / N, 10);
+
+                                ln.transform.rotation = Quaternion.Euler(0, 0, a);
+                                ln.GetComponent<Image>().color = c;
+
+                            }
+                        }
+                        else
+                        {
+                            var ln = (GameObject)Instantiate(line, Vector3.zero,
+                                Quaternion.identity, conteinerGraph.transform);
+
+                            ln.transform.localPosition = new Vector3(i * x / (w - 1),
+                                (sc - mh) * y / (xh - mh), 0);
+                            var yscore = player.Scores[i + 1] * y / (xh - mh);
+                            var xscore = x / (w - 1);
+                            var a = Mathf.Atan2(yscore, xscore)
+                                * 180 / Mathf.PI;
+
+                            ln.GetComponent<RectTransform>().sizeDelta = new Vector2(Mathf.Sqrt(
+                                yscore * yscore + xscore * xscore),
+                                graphType == GraphType.THERMOMETER ? 17f * (gameManager.PlayerList.Count - p) / gameManager.PlayerList.Count
+                                : 10);
+
+                            ln.transform.rotation = Quaternion.Euler(0, 0, a);
+                            ln.GetComponent<Image>().color = c;
+                        }
+
+            
                     }
 
                 }
-                p++;
             }
         }
 
@@ -179,6 +219,8 @@ public class SceneManager : MonoBehaviour
         }
     }
 
+    #region CanvasActivation
+
     public void moreInfoCanvas()
     {
         OnChangeMenu();
@@ -189,8 +231,9 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        GraphCanvas.SetActive(false);
         ShowPlayerListCommon.gameObject.SetActive(false);
-
+        
     }
     public void mainMenuCanvas()
     {
@@ -202,6 +245,7 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        GraphCanvas.SetActive(false);
         ShowPlayerListCommon.gameObject.SetActive(false);
     }
     public void chargingCanvas()
@@ -214,6 +258,7 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(false);
         ChargingCanvas.SetActive(true); 
         PlayerListCanvas.SetActive(false);
+        GraphCanvas.SetActive(false);
         ShowPlayerListCommon.gameObject.SetActive(gameManager.RoundIndex > 0);
         ChargingTitleShadow.text = ChargingTitle.text;
     }
@@ -230,6 +275,7 @@ public class SceneManager : MonoBehaviour
         SelectingAmountTextShadow.text = SelectingTitle;
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(false);
+        GraphCanvas.SetActive(false);
         print($"sh: {gameManager.RoundIndex > 0}");
         ShowPlayerListCommon.gameObject.SetActive(gameManager.RoundIndex > 0);
         selectingAmountChange();
@@ -268,8 +314,11 @@ public class SceneManager : MonoBehaviour
         SelectingPlayerCanvas.SetActive(true);
         ChargingCanvas.SetActive(false);
         PlayerListCanvas.SetActive(true);
+        GraphCanvas.SetActive(false);
         ShowPlayerListCommon.gameObject.SetActive(false);
     }
+
+    #endregion
     public void ShowPlayerListSuper()
     {
         PlayerListCanvas.SetActive(true);
@@ -403,10 +452,34 @@ public class SceneManager : MonoBehaviour
         //gameManager.PlayerList[PlayerIndex] = new("");
     }
 
+    public void ShowGraph()
+    { 
+        GraphCanvas.SetActive(true);
+        HideGraphButton.gameObject.SetActive(true);
+        ShowGraphButton.gameObject.SetActive(false);
+        setGrid();
+    }
+    public void HideGraph()
+    {
+        GraphCanvas.SetActive(false);
+        HideGraphButton.gameObject.SetActive(false);
+        ShowGraphButton.gameObject.SetActive(true);
+
+        for (int i = 0; i < conteinerGraph.transform.childCount; i++)
+        {
+            Destroy(conteinerGraph.transform.GetChild(i).gameObject);
+        }
+    }
 
     public void OnChangeMenu()
     {
         version.text = Application.version;
         info_resolution.text = $"{Screen.width}x{Screen.height}";
     }
+}
+
+public enum GraphType{
+    BASIC,
+    THERMOMETER,
+    SLICEDBAR
 }

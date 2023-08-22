@@ -229,9 +229,9 @@ public class GameManager : MonoBehaviour
             selectingButtonIsClicked = false;
             var x = int.Parse(sceneManager.SelectingAmountText.text);
 
-            if (player.Predictions.Count > RoundIndex)
-                player.AddWins(x);
-            else player.AddPrediction(x);
+            if (player.Wins.Count > RoundIndex)
+                player.Wins[RoundIndex] = x;
+            else player.AddWins(x);
 
             
             Debug.Log("Win agregada");
